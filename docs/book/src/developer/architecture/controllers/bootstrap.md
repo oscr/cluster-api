@@ -13,4 +13,5 @@ See [proposal](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/pro
 
 ### Implementations
 
-* [Kubeadm](https://github.com/kubernetes-sigs/cluster-api/tree/main/bootstrap/kubeadm) (Reference Implementation)
+* [Kubeadm](https://github.com/kubernetes-sigs/cluster-api/tree/main/bootstrap/kubeadm) (reference Implementation)
+* [All bootstrap implementations](../../../reference/providers.md#bootstrap)
