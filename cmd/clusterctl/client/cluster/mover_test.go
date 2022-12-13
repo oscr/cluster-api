@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -836,81 +835,6 @@ func Test_objectMover_restoreTargetObject(t *testing.T) {
 				g.Expect(oAfter.GetUID()).Should(Equal(oTo.GetUID()))
 				g.Expect(oAfter.GetOwnerReferences()).Should(Equal(oTo.GetOwnerReferences()))
 			}
-		})
-	}
-}
-
-func Test_objectMover_backup(t *testing.T) {
-	// NB. we are testing the move and move sequence using the same set of moveTests, but checking the results at different stages of the move process
-	for _, tt := range backupRestoreTests {
-		t.Run(tt.name, func(t *testing.T) {
-			g := NewWithT(t)
-
-			// Create an objectGraph bound a source cluster with all the CRDs for the types involved in the test.
-			graph := getObjectGraphWithObjs(tt.fields.objs)
-
-			// Get all the types to be considered for discovery
-			g.Expect(getFakeDiscoveryTypes(graph)).To(Succeed())
-
-			// trigger discovery the content of the source cluster
-			g.Expect(graph.Discovery("")).To(Succeed())
-
-			// Run toDirectory
-			mover := objectMover{
-				fromProxy: graph.proxy,
-			}
-
-			dir, err := os.MkdirTemp("/tmp", "cluster-api")
-			if err != nil {
-				t.Error(err)
-			}
-			defer os.RemoveAll(dir)
-
-			err = mover.toDirectory(graph, dir)
-			if tt.wantErr {
-				g.Expect(err).To(HaveOccurred())
-				return
-			}
-
-			g.Expect(err).NotTo(HaveOccurred())
-
-			// check that the objects are stored in the temporary directory but not deleted from the source cluster
-			csFrom, err := graph.proxy.NewClient()
-			g.Expect(err).NotTo(HaveOccurred())
-
-			missingFiles := []string{}
-			for _, node := range graph.uidToNode {
-				key := client.ObjectKey{
-					Namespace: node.identity.Namespace,
-					Name:      node.identity.Name,
-				}
-
-				// objects are not deleted from the source cluster
-				oFrom := &unstructured.Unstructured{}
-				oFrom.SetAPIVersion(node.identity.APIVersion)
-				oFrom.SetKind(node.identity.Kind)
-
-				err := csFrom.Get(ctx, key, oFrom)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				// objects are stored in the temporary directory with the expected filename
-				files, err := os.ReadDir(dir)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				expectedFilename := node.getFilename()
-				found := false
-				for _, f := range files {
-					if strings.Contains(f.Name(), expectedFilename) {
-						found = true
-					}
-				}
-
-				if !found {
-					missingFiles = append(missingFiles, expectedFilename)
-				}
-			}
-
-			g.Expect(missingFiles).To(BeEmpty())
 		})
 	}
 }

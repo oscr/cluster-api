@@ -139,69 +139,6 @@ func Test_clusterctlClient_Move(t *testing.T) {
 	}
 }
 
-func Test_clusterctlClient_Backup(t *testing.T) {
-	dir, err := os.MkdirTemp("/tmp", "cluster-api")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(dir)
-
-	type fields struct {
-		client *fakeClient
-	}
-	// These tests are checking the Backup scaffolding
-	// The internal library handles the backup logic and tests can be found there
-	type args struct {
-		options BackupOptions
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "does not return error if cluster client is found",
-			fields: fields{
-				client: fakeClientForMove(), // core v1.0.0 (v1.0.1 available), infra v2.0.0 (v2.0.1 available)
-			},
-			args: args{
-				options: BackupOptions{
-					FromKubeconfig: Kubeconfig{Path: "kubeconfig", Context: "mgmt-context"},
-					Directory:      dir,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "returns an error if from cluster client is not found",
-			fields: fields{
-				client: fakeClientForMove(), // core v1.0.0 (v1.0.1 available), infra v2.0.0 (v2.0.1 available)
-			},
-			args: args{
-				options: BackupOptions{
-					FromKubeconfig: Kubeconfig{Path: "kubeconfig", Context: "does-not-exist"},
-					Directory:      dir,
-				},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			g := NewWithT(t)
-
-			err := tt.fields.client.Backup(tt.args.options)
-			if tt.wantErr {
-				g.Expect(err).To(HaveOccurred())
-				return
-			}
-			g.Expect(err).NotTo(HaveOccurred())
-		})
-	}
-}
-
 func Test_clusterctlClient_Restore(t *testing.T) {
 	dir, err := os.MkdirTemp("/tmp", "cluster-api")
 	if err != nil {
@@ -303,10 +240,6 @@ func (f *fakeObjectMover) Move(_ string, _ cluster.Client, _ bool) error {
 }
 
 func (f *fakeObjectMover) ToDirectory(_ string, _ string) error {
-	return f.toDirectoryErr
-}
-
-func (f *fakeObjectMover) Backup(_ string, _ string) error {
 	return f.toDirectoryErr
 }
 
